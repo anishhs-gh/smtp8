@@ -1,0 +1,13 @@
+# Firebase uses this file instead of .gitignore when packaging functions.
+# dist/ is intentionally included — it's the compiled output that runs in the cloud.
+
+node_modules/
+src/
+.git/
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+# .env.{project-id} files are intentionally included — Firebase loads them per-project
+*.tsbuildinfo

@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "smtp8-ws"
+  },
+  "targets": {
+    "smtp8-ws": {
+      "hosting": {
+        "smtp8": ["smtp8"]
+      }
+    }
+  }
+}
