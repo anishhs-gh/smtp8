@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   # ── Detect which packages changed ────────────────────────────────────────────
@@ -25,11 +26,24 @@ jobs:
         with:
           filters: |
             backend:
-              - 'backend/**'
+              - 'backend/src/**'
+              - 'backend/package.json'
+              - 'backend/package-lock.json'
+              - 'backend/tsconfig.json'
             frontend:
-              - 'frontend/**'
+              - 'frontend/src/**'
+              - 'frontend/public/**'
+              - 'frontend/index.html'
+              - 'frontend/vite.config.ts'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
+              - 'frontend/tailwind.config.*'
+              - 'frontend/tsconfig*.json'
             cli:
-              - 'cli/**'
+              - 'cli/src/**'
+              - 'cli/package.json'
+              - 'cli/package-lock.json'
+              - 'cli/tsconfig.json'
             firebase-config:
               - 'firebase.json'
               - '.firebaserc'
@@ -38,7 +52,7 @@ jobs:
   deploy-functions:
     name: Deploy — Firebase Functions
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.firebase-config == 'true'
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.firebase-config == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,24 +72,16 @@ jobs:
         run: npm run build
 
       - name: Write backend env file
-        # Firebase Functions reads backend/.env.smtp8-ws at deploy time and
-        # uploads it alongside the function. Create it from GitHub Secrets so
-        # CI never needs the file committed.
         run: echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}" > backend/.env.smtp8-ws
 
       - name: Deploy Firebase Functions
-        uses: w9jds/firebase-action@master
-        with:
-          args: deploy --only functions
-        env:
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: npx firebase-tools deploy --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }} --non-interactive
 
   # ── Deploy Firebase Hosting (frontend changed) ────────────────────────────────
   deploy-hosting:
     name: Deploy — Firebase Hosting
     needs: changes
-    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.firebase-config == 'true'
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.firebase-config == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,18 +99,11 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         env:
-          # Vite picks up VITE_* env vars at build time. This overrides any
-          # local .env.production so CI always uses the value from Secrets.
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: npm run build
 
       - name: Deploy Firebase Hosting
-        uses: w9jds/firebase-action@master
-        with:
-          args: deploy --only hosting
-        env:
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: npx firebase-tools deploy --only hosting --project ${{ secrets.FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }} --non-interactive
 
   # ── Publish CLI to npm (cli changed) ─────────────────────────────────────────
   deploy-cli:
@@ -130,7 +129,19 @@ jobs:
         working-directory: cli
         run: npm run build
 
+      - name: Check if version already published
+        id: version-check
+        working-directory: cli
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view smtp8@$VERSION version 2>/dev/null | grep -q "$VERSION"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Publish to npm
+        if: steps.version-check.outputs.exists == 'false'
         working-directory: cli
         run: npm publish --access public
         env:
