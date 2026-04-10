@@ -5,6 +5,9 @@
 # Source
 src/
 
+# Build script (dev-only)
+build.mjs
+
 # TypeScript config
 tsconfig.json
 *.tsbuildinfo
@@ -15,7 +18,6 @@ node_modules/
 # Environment
 .env
 .env.*
-!.env.example
 
 # Test / CI
 tests/

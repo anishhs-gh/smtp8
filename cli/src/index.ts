@@ -5,7 +5,7 @@ import chalk from "chalk";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const VERSION = "0.1.0";
+const VERSION = "1.1.0";
 
 const HOSTNAME_RE =
   /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
