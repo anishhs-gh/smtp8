@@ -21,8 +21,8 @@ function Code({ children }: { children: React.ReactNode }) {
 
 function Field({ name, desc }: { name: string; desc: string }) {
   return (
-    <div className="flex gap-4 px-5 py-3.5 border-b border-outline-variant/10 last:border-0">
-      <code className="text-tertiary font-mono text-sm w-36 flex-shrink-0 pt-0.5">{name}</code>
+    <div className="flex flex-col sm:flex-row sm:gap-4 px-4 sm:px-5 py-3.5 border-b border-outline-variant/10 last:border-0">
+      <code className="text-tertiary font-mono text-sm sm:w-36 sm:flex-shrink-0 sm:pt-0.5 mb-1 sm:mb-0">{name}</code>
       <span className="text-on-surface-variant text-sm">{desc}</span>
     </div>
   );
@@ -45,7 +45,7 @@ import React from "react";
 
 export default function DocsPage() {
   return (
-    <main className="pt-28 px-10 pb-16">
+    <main className="pt-28 px-4 sm:px-10 pb-16">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-12">

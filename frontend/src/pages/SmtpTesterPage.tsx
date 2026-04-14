@@ -149,7 +149,7 @@ export default function SmtpTesterPage() {
         : "Unencrypted";
 
   return (
-    <main className="pt-24 px-10 pb-12">
+    <main className="pt-24 px-4 sm:px-10 pb-12">
       <div className="max-w-5xl mx-auto space-y-6">
         <Hero />
 
@@ -184,19 +184,19 @@ export default function SmtpTesterPage() {
         </div>
 
         {/* CLI callout */}
-        <div className="flex items-center justify-between gap-6 bg-surface-container rounded-xl px-6 py-4 border border-outline-variant/10">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="material-symbols-outlined text-tertiary flex-shrink-0" style={{ fontSize: 20 }}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-surface-container rounded-xl px-6 py-4 border border-outline-variant/10">
+          <div className="flex items-start sm:items-center gap-3 min-w-0">
+            <span className="material-symbols-outlined text-tertiary flex-shrink-0 mt-0.5 sm:mt-0" style={{ fontSize: 20 }}>
               terminal
             </span>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-on-surface">Prefer the terminal?</p>
-              <p className="text-[13px] text-on-surface-variant truncate">
+              <p className="text-[13px] text-on-surface-variant">
                 SMTP8 is also available as a CLI — interactive prompts, live streaming, same results.
               </p>
             </div>
           </div>
-          <code className="flex-shrink-0 text-[13px] font-mono bg-surface px-3 py-1.5 rounded-lg text-tertiary border border-outline-variant/10 select-all">
+          <code className="self-start sm:flex-shrink-0 text-[13px] font-mono bg-surface px-3 py-1.5 rounded-lg text-tertiary border border-outline-variant/10 select-all">
             npm install -g smtp8
           </code>
         </div>

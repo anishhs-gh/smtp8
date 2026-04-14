@@ -63,7 +63,7 @@ describe("help flag", () => {
     const { stdout, status } = run(["--help"]);
     expect(status).toBe(0);
     expect(stdout).toContain("--api-url");
-    expect(stdout).toContain("--remote");
+    expect(stdout).toContain("--local");
     expect(stdout).toContain("--version");
     expect(stdout).toContain("--help");
   });
@@ -86,7 +86,7 @@ describe("help flag", () => {
 
   it("help output shows usage examples", () => {
     const { stdout } = run(["--help"]);
-    expect(stdout).toContain("smtp8 --remote");
+    expect(stdout).toContain("smtp8 --local");
   });
 });
 
