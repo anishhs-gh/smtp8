@@ -7,8 +7,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-surface text-on-surface flex flex-col">
       <TopBar />
       <div className="flex-1">{children}</div>
-      <footer className="flex justify-between items-center px-8 py-5 border-t border-outline-variant/10">
-        <div className="text-[11px] uppercase tracking-widest text-on-secondary-container">
+      <footer className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0 px-8 py-5 border-t border-outline-variant/10">
+        <div className="text-[11px] uppercase tracking-widest text-on-secondary-container text-center sm:text-left">
           © 2025 SMTP8. All systems operational.
         </div>
         <div className="flex gap-6">

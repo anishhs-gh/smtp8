@@ -35,9 +35,6 @@ export default function ConfigForm({
     <div className="col-span-12 lg:col-span-7 bg-surface-container rounded-xl p-8 shadow-2xl">
       <div className="flex items-center justify-between mb-8">
         <h3 className="text-xl font-bold text-on-surface">Configuration</h3>
-        <span className="px-3 py-1 bg-surface-container-high text-[10px] uppercase tracking-widest text-on-secondary-container rounded-full">
-          Manual Entry
-        </span>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
@@ -52,7 +49,7 @@ export default function ConfigForm({
               placeholder="smtp.provider.com"
               value={form.host}
               onChange={(e) => onChange("host", e.target.value)}
-              className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-sm"
+              className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-base"
             />
           </div>
           <div className="col-span-2 md:col-span-1">
@@ -64,7 +61,7 @@ export default function ConfigForm({
               placeholder="587"
               value={form.port}
               onChange={(e) => onChange("port", e.target.value)}
-              className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-sm"
+              className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-base"
             />
           </div>
         </div>
@@ -81,7 +78,7 @@ export default function ConfigForm({
               value={form.username}
               onChange={(e) => onChange("username", e.target.value)}
               autoComplete="off"
-              className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-sm"
+              className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-base"
             />
           </div>
           <div className="col-span-2 md:col-span-1">
@@ -94,7 +91,7 @@ export default function ConfigForm({
               value={form.password}
               onChange={(e) => onChange("password", e.target.value)}
               autoComplete="new-password"
-              className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-sm"
+              className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-base"
             />
           </div>
         </div>
@@ -110,7 +107,7 @@ export default function ConfigForm({
                 key={value}
                 type="button"
                 onClick={() => onChange("encryption", value)}
-                className={`py-3 rounded-xl text-sm font-semibold transition-all ${
+                className={`py-3 rounded-xl text-xs font-semibold transition-all ${
                   form.encryption === value
                     ? "bg-primary-container/20 border border-primary text-primary"
                     : "bg-surface-container-highest border border-outline-variant/20 text-on-surface hover:border-primary/40"
@@ -132,7 +129,7 @@ export default function ConfigForm({
             placeholder="smtp8.local"
             value={form.clientName}
             onChange={(e) => onChange("clientName", e.target.value)}
-            className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-sm"
+            className="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 text-on-surface placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all text-base"
           />
         </div>
 
