@@ -419,6 +419,7 @@ ${chalk.bold("Examples:")}
   smtp8 test --host mail.example.com --port 465 --encryption SSL_TLS
   smtp8 test --host smtp.gmail.com --username u@gmail.com --password secret
   smtp8 test --host smtp.gmail.com --remote        # route through hosted API
+  smtp8 --remote                                   # interactive via hosted API
   smtp8 --api-url https://api.example.com          # interactive via custom API
 `);
 }
