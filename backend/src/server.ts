@@ -184,26 +184,22 @@ router.post("/v1/test", testLimiter, async (req, res) => {
   }
 
   res.status(200);
-  res.setHeader("Content-Type", "application/x-ndjson");
-  // no-store: never cache — response contains protocol events for a credentialled session.
-  // no-transform: tells every intermediate proxy/CDN not to re-encode (gzip, etc.)
-  //   or buffer the body. This is the correct directive for Firebase Hosting CDN and
-  //   Google's GFE; without it they may buffer the stream until it completes.
+  // text/event-stream (SSE) is the correct content type for streaming through
+  // Cloud Run and Firebase Functions. Cloud Run has special handling for SSE
+  // that bypasses its default response buffer — with other types (e.g.
+  // application/x-ndjson) Cloud Run holds the full body until res.end() before
+  // forwarding, confirmed by TTFB ≈ total-time in production timing tests.
+  res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-store, no-transform");
   res.setHeader("Connection", "keep-alive");
-  // X-Accel-Buffering: no — disables buffering on nginx-based reverse proxies.
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
-
-  // Disable Nagle's algorithm on the underlying TCP socket.
-  // Each NDJSON event is ~80–150 bytes — well below the 1500-byte MTU. Without
-  // this, the OS TCP stack coalesces multiple small writes into one segment and
-  // holds the data until the buffer fills or an ACK arrives (~200 ms timeout).
-  // setNoDelay(true) forces an immediate flush on every res.write() call.
   res.socket?.setNoDelay(true);
 
+  // SSE wire format: each event is a "data:" line followed by a blank line.
+  // The JSON payload shape is unchanged — only the framing changes.
   const write = (event: { t: string; type: string; line: string }) => {
-    if (!res.writableEnded) res.write(`${JSON.stringify(event)}\n`);
+    if (!res.writableEnded) res.write(`data: ${JSON.stringify(event)}\n\n`);
   };
 
   const controller = new AbortController();
