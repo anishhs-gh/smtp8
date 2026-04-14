@@ -1,0 +1,36 @@
+# Files excluded from the npm package.
+# npm ships: dist/, package.json, README.md (if present), .env.example
+# Everything else is excluded.
+
+# Source
+src/
+
+# Build script (dev-only)
+build.mjs
+
+# TypeScript config
+tsconfig.json
+*.tsbuildinfo
+
+# Dev dependencies / local tooling
+node_modules/
+
+# Environment
+.env
+.env.*
+
+# Test / CI
+tests/
+.github/
+coverage/
+*.test.ts
+*.spec.ts
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
