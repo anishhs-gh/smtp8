@@ -184,20 +184,28 @@ router.post("/v1/test", testLimiter, async (req, res) => {
   }
 
   res.status(200);
-  res.setHeader("Content-Type", "application/x-ndjson");
-  // no-store: instructs all caches (browser, CDN, proxy) to never store
-  // this response — important because the stream contains protocol events
-  // for a session that included credentials.
-  res.setHeader("Cache-Control", "no-store");
+  // SSE (text/event-stream) is required for streaming through Cloud Run.
+  // Cloud Run's GFE has a fast-path for this content type that bypasses its
+  // response buffer. Other types (application/x-ndjson, etc.) are buffered
+  // by the GFE until res.end(), delivering all events at once.
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-store, no-transform");
   res.setHeader("Connection", "keep-alive");
-  // Disable response buffering on nginx-based proxies (Firebase Hosting CDN,
-  // Cloud Run's internal proxy). Without this, the CDN buffers the entire
-  // NDJSON stream and delivers it all at once instead of incrementally.
   res.setHeader("X-Accel-Buffering", "no");
+  // Explicit chunked encoding so each write maps to one HTTP/1.1 chunk.
+  res.setHeader("Transfer-Encoding", "chunked");
   res.flushHeaders();
+  // Padding comment: Cloud Run GFE may buffer the first ~256 bytes for
+  // content-type sniffing even with text/event-stream. This pushes past it.
+  res.write(`: ${" ".repeat(256)}\n\n`);
 
   const write = (event: { t: string; type: string; line: string }) => {
-    if (!res.writableEnded) res.write(`${JSON.stringify(event)}\n`);
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+      // Force the kernel TCP buffer to flush immediately so each event is
+      // delivered as its own chunk rather than being coalesced.
+      (res.socket as import("net").Socket | null)?.write?.("");
+    }
   };
 
   const controller = new AbortController();
@@ -223,10 +231,17 @@ app.use("/api", router);
 export { app };
 
 // Do not bind a port when running inside Firebase / Cloud Functions.
-// K_SERVICE      — set by Cloud Run and Cloud Functions 2nd gen at runtime.
+// K_SERVICE      — set by Cloud Run AND Firebase Functions 2nd gen at runtime.
 // FUNCTION_TARGET — set by Firebase Functions emulator.
 // FIREBASE_CONFIG — set by Firebase CLI when loading code for deploy analysis.
-if (!process.env.K_SERVICE && !process.env.FUNCTION_TARGET && !process.env.FIREBASE_CONFIG) {
+// FORCE_STANDALONE — set in Dockerfile to run as a plain Cloud Run service
+//                    without the Firebase Functions wrapper (K_SERVICE is still
+//                    set by Cloud Run in that case, so we need the override).
+const isFirebaseFunctions =
+  !process.env.FORCE_STANDALONE &&
+  (process.env.FUNCTION_TARGET || process.env.FIREBASE_CONFIG);
+
+if (!isFirebaseFunctions) {
   app.listen(port, () => {
     console.log(`SMTP8 API listening on :${port}`);
   });

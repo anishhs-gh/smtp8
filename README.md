@@ -11,7 +11,7 @@ SMTP8 connects directly to an SMTP server, streams every protocol event as it ha
 ## What it does
 
 - TCP/TLS connection → EHLO → optional STARTTLS upgrade → optional AUTH → NOOP → QUIT
-- Every step streamed live as NDJSON — no waiting for the full session to complete
+- Every step streamed live as Server-Sent Events — each protocol round-trip appears as it happens
 - Supports STARTTLS (port 587), SSL/TLS (port 465), and plain (port 25)
 - Credentials redacted in all logs
 
@@ -22,8 +22,8 @@ SMTP8 connects directly to an SMTP server, streams every protocol event as it ha
 | Package | Description |
 |---|---|
 | `frontend/` | React + Vite web app — live step tracker and raw protocol inspector |
-| `backend/` | Express API — runs the SMTP session, streams events |
-| `cli/` | `smtp8` npm CLI — same test, from your terminal |
+| `backend/` | Express API — runs the SMTP session, streams events over SSE |
+| `cli/` | `smtp8` npm CLI — same test, directly from your terminal (no backend required) |
 
 ---
 
@@ -34,16 +34,24 @@ npm install -g smtp8
 smtp8
 ```
 
-Uses the deployed API by default. Options:
+Runs the SMTP test directly from your machine by default — no backend needed. Options:
 
 ```
---local           Point at http://localhost:8081 (local dev)
---api-url <url>   Custom API URL
+--remote          Route through the hosted smtp8 API instead
+--api-url <url>   Route through a custom API URL
 --version, -v     Print version
 --help, -h        Show help
 ```
 
-Navigation inside prompts: **Tab** to autofill the placeholder, **Ctrl+C** to go back, **ESC** to clear the current field.
+Non-interactive mode for scripts and CI:
+
+```bash
+smtp8 test --host smtp.gmail.com
+smtp8 test --host smtp.gmail.com --port 465 --encryption SSL_TLS
+SMTP8_PASSWORD=secret smtp8 test --host smtp.gmail.com --username user@gmail.com
+```
+
+See [`cli/README.md`](cli/README.md) for full usage.
 
 ---
 
@@ -74,18 +82,26 @@ cd backend && npm run dev
 # Terminal 2 — UI on http://localhost:5173
 cd frontend && npm run dev
 
-# Or use the CLI against local backend
-cd cli && npm run dev -- --local
+# CLI — runs directly from your machine, no backend needed
+smtp8
 ```
 
 ---
 
-## Running tests
+## Building
 
 ```bash
-cd cli
-npm run build
-npm test
+cd backend && npm run build   # TypeScript → dist/
+cd frontend && npm run build  # Vite → dist/
+cd cli && npm run build       # esbuild bundle → dist/index.js
+```
+
+---
+
+## Tests
+
+```bash
+cd cli && npm test   # 9 tests, all passing
 ```
 
 Tests run automatically on every pull request via GitHub Actions.
@@ -94,16 +110,11 @@ Tests run automatically on every pull request via GitHub Actions.
 
 ## Deployment
 
-Deployed via Firebase Hosting (frontend) and Firebase Functions (backend). See [`docs/ops-guide.md`](docs/ops-guide.md) for the full setup, environment config, GitHub Secrets, and deploy commands.
+- **Frontend** — Firebase Hosting
+- **Backend** — standalone Cloud Run service via Docker (no Firebase Functions wrapper — required for SSE streaming to work)
+- **CLI** — published to npm on version bump
 
----
-
-## Docs
-
-- [`docs/ops-guide.md`](docs/ops-guide.md) — local setup, deploy, secrets, CORS config
-- [`docs/deployment.md`](docs/deployment.md) — hosting options (Cloud Functions, Cloud Run, VPS)
-- [`docs/setup-checklist.md`](docs/setup-checklist.md) — first-time setup checklist
-- [`docs/pro-port25-plan.md`](docs/pro-port25-plan.md) — future port 25 / VPS plan
+See [`docs/ops-guide.md`](docs/ops-guide.md) for full setup, secrets, and deploy commands.
 
 ---
 
@@ -112,16 +123,25 @@ Deployed via Firebase Hosting (frontend) and Firebase Functions (backend). See [
 ```
 Browser / CLI
      │
-     │  POST /v1/test  (NDJSON stream)
+     │  POST /v1/test  (SSE stream)
      ▼
-Firebase Functions (Express)          ← backend/
+Cloud Run — standalone Express container    ← backend/
      │
      │  raw TCP / TLS
      ▼
 SMTP server (Gmail, SendGrid, etc.)
 ```
 
-The frontend calls the Cloud Run URL directly — bypassing Firebase Hosting's CDN — so the NDJSON stream reaches the browser without buffering.
+The backend runs as a plain Docker container on Cloud Run, without the Firebase Functions wrapper. The Functions framework buffers the full response before forwarding, so all events arrive at once. Standalone Cloud Run streams each SSE event as the SMTP protocol round-trip completes, confirmed by per-event client-side timestamps spanning the real SMTP session duration.
+
+---
+
+## Docs
+
+- [`docs/ops-guide.md`](docs/ops-guide.md) — local setup, deploy, secrets, CORS config
+- [`docs/deployment.md`](docs/deployment.md) — hosting options and architecture notes
+- [`docs/streaming-fix-plan.md`](docs/streaming-fix-plan.md) — why streaming failed through Firebase Functions and how it was fixed
+- [`docs/sdk-sending-plan.md`](docs/sdk-sending-plan.md) — roadmap for evolving into an email-sending SDK
 
 ---
 

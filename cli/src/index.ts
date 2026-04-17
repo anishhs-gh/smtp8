@@ -316,17 +316,20 @@ async function executeTest(
 
         buffer += decoder.decode(value, { stream: true });
 
-        let idx = buffer.indexOf("\n");
+        // SSE format: events separated by blank lines (\n\n).
+        // Each event is a "data: {json}" line.
+        let idx = buffer.indexOf("\n\n");
         while (idx !== -1) {
-          const raw = buffer.slice(0, idx).trim();
-          buffer = buffer.slice(idx + 1);
+          const chunk = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
 
-          if (raw) {
+          const dataLine = chunk.split("\n").find((l) => l.startsWith("data: "));
+          if (dataLine) {
             let ev: ProtocolEvent;
             try {
-              ev = JSON.parse(raw) as ProtocolEvent;
+              ev = JSON.parse(dataLine.slice(6)) as ProtocolEvent;
             } catch {
-              idx = buffer.indexOf("\n");
+              idx = buffer.indexOf("\n\n");
               continue;
             }
 
@@ -337,7 +340,7 @@ async function executeTest(
             if (ev.line.includes("Authentication succeeded")) authenticated = true;
           }
 
-          idx = buffer.indexOf("\n");
+          idx = buffer.indexOf("\n\n");
         }
       }
     } catch (err) {

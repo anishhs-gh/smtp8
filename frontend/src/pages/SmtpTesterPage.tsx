@@ -109,20 +109,23 @@ export default function SmtpTesterPage() {
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
 
-        let idx = buffer.indexOf("\n");
+        // SSE format: events separated by blank lines (\n\n).
+        // Each event is a "data: {json}" line.
+        let idx = buffer.indexOf("\n\n");
         while (idx !== -1) {
-          const line = buffer.slice(0, idx).trim();
-          buffer = buffer.slice(idx + 1);
-          if (line) {
+          const chunk = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          const dataLine = chunk.split("\n").find((l) => l.startsWith("data: "));
+          if (dataLine) {
             try {
-              const ev = JSON.parse(line) as ProtocolEvent;
+              const ev = JSON.parse(dataLine.slice(6)) as ProtocolEvent;
               setEvents((prev) => [...prev, ev]);
               if (ev.type === "error") setStatus("error");
             } catch {
-              // ignore malformed line
+              // ignore malformed event
             }
           }
-          idx = buffer.indexOf("\n");
+          idx = buffer.indexOf("\n\n");
         }
       }
 

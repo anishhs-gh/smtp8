@@ -30,6 +30,7 @@ jobs:
               - 'backend/package.json'
               - 'backend/package-lock.json'
               - 'backend/tsconfig.json'
+              - 'backend/Dockerfile'
             frontend:
               - 'frontend/src/**'
               - 'frontend/public/**'
@@ -48,34 +49,45 @@ jobs:
               - 'firebase.json'
               - '.firebaserc'
 
-  # ── Deploy Firebase Functions (backend changed) ───────────────────────────────
-  deploy-functions:
-    name: Deploy — Firebase Functions
+  # ── Deploy backend to Cloud Run (standalone, no Firebase Functions wrapper) ───
+  deploy-backend:
+    name: Deploy — Cloud Run
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.firebase-config == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: google-github-actions/auth@v2
         with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: backend/package-lock.json
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Install backend dependencies
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build and push image
         working-directory: backend
-        run: npm ci
+        run: |
+          docker build --platform linux/amd64 \
+            -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/smtp8-standalone/smtp8-api:${{ github.sha }} \
+            -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/smtp8-standalone/smtp8-api:latest \
+            .
+          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/smtp8-standalone/smtp8-api:${{ github.sha }}
+          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/smtp8-standalone/smtp8-api:latest
 
-      - name: Build backend
-        working-directory: backend
-        run: npm run build
-
-      - name: Write backend env file
-        run: echo "ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}" > backend/.env.smtp8-ws
-
-      - name: Deploy Firebase Functions
-        run: npx firebase-tools deploy --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }} --non-interactive
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy api \
+            --image us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/smtp8-standalone/smtp8-api:${{ github.sha }} \
+            --region us-central1 \
+            --project ${{ secrets.GCP_PROJECT_ID }} \
+            --allow-unauthenticated \
+            --set-env-vars "^|^ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}" \
+            --memory 512Mi \
+            --timeout 60 \
+            --no-use-http2
 
   # ── Deploy Firebase Hosting (frontend changed) ────────────────────────────────
   deploy-hosting:
